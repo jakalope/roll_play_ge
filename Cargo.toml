@@ -1,0 +1,29 @@
+[package]
+name = "roll_play_ge"
+version = "0.1.0"
+authors = ["Jake Askeland <jake.askeland@gmail.com>"]
+
+[lib]
+name = "roll_play_ge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "example"
+path = "example/main.rs"
+
+[dependencies]
+camera_controllers = "0.23.0"
+find_folder = "0.3.0"
+gfx_core = "0.8.0"
+image = "0.18.0"
+piston = "0.33.0"
+piston-ai_behavior = "0.22.0"
+piston2d-drag_controller = "0.21.0"
+piston2d-graphics = "0.25.0"
+piston2d-sprite = "0.41.0"
+gfx_device_gl = "0.15.0"
+piston_window = "0.75.0"
+rand = "0.3.14"
+shader_version = "0.3.0"
+tiled = "0.7.2"
+vecmath = "0.3.0"
