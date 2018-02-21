@@ -3,7 +3,7 @@ use piston_window;
 use gfx_core::*;
 use gfx_device_gl;
 use tilesheet;
-use piston_window::Transformed;
+use piston_window::*;
 
 #[derive(Debug)]
 pub enum NewGameError {
@@ -47,11 +47,45 @@ impl Game {
                 return false;
             }
         };
+        self.handle_event(&event);
         window.draw_2d(&event, |context, gfx| {
             self.render(context, gfx);
             Some(())
         });
         true
+    }
+
+    fn handle_event(&mut self, event: &piston_window::Event) {
+        if let Some(piston_window::Button::Keyboard(key)) = event.press_args() {
+            println!("Pressed keyboard key '{:?}'", key);
+        };
+        if let Some(args) = event.button_args() {
+            println!("Scancode {:?}", args.scancode);
+        }
+        if let Some(button) = event.release_args() {
+            match button {
+                Button::Keyboard(key) => println!("Released keyboard key '{:?}'", key),
+                Button::Mouse(button) => println!("Released mouse button '{:?}'", button),
+                Button::Controller(button) => println!("Released controller button '{:?}'", button),
+            }
+        };
+        if let Some(_) = event.controller_axis_args() {
+            // axis_values.insert((args.id, args.axis), args.position);
+        }
+        if let Some(_args) = event.idle_args() {
+            // println!("Idle {}", _args.dt);
+        }
+        if let Some(_args) = event.update_args() {
+            /*
+            // Used to test CPU overload.
+            println!("Update {}", _args.dt);
+            let mut x: f64 = 0.0;
+            for _ in 0..500_000 {
+                x += (1.0 + x).sqrt();
+            }
+            println!("{}", x);
+            */
+        }
     }
 
     fn render(&mut self, context: piston_window::Context, renderer: &mut piston_window::G2d) {
