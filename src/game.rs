@@ -4,6 +4,7 @@ use gfx_core::*;
 use gfx_device_gl;
 use tilesheet;
 use piston_window::*;
+use controller;
 
 #[derive(Debug)]
 pub enum NewGameError {
@@ -15,6 +16,7 @@ pub struct Game {
     tilesheet: tilesheet::Tilesheet,
     piston_image: piston_window::Image,
     map_texture: piston_window::Texture<gfx_device_gl::Resources>,
+    controller: controller::Controller,
 }
 
 impl Game {
@@ -37,6 +39,7 @@ impl Game {
             tilesheet: tilesheet,
             piston_image: piston_image,
             map_texture: tiletexture,
+            controller: controller::Controller::new(),
         })
     }
 
@@ -56,36 +59,59 @@ impl Game {
     }
 
     fn handle_event(&mut self, event: &piston_window::Event) {
-        if let Some(piston_window::Button::Keyboard(key)) = event.press_args() {
-            println!("Pressed keyboard key '{:?}'", key);
-        };
-        if let Some(args) = event.button_args() {
-            println!("Scancode {:?}", args.scancode);
-        }
-        if let Some(button) = event.release_args() {
-            match button {
-                Button::Keyboard(key) => println!("Released keyboard key '{:?}'", key),
-                Button::Mouse(button) => println!("Released mouse button '{:?}'", button),
-                Button::Controller(button) => println!("Released controller button '{:?}'", button),
+        if let Some(Button::Keyboard(key)) = event.press_args() {
+            // TODO Make keybindings configurable.
+            match key {
+                keyboard::Key::W => {
+                    self.controller.input.up = true;
+                }
+                keyboard::Key::A => {
+                    self.controller.input.left = true;
+                }
+                keyboard::Key::S => {
+                    self.controller.input.down = true;
+                }
+                keyboard::Key::D => {
+                    self.controller.input.right = true;
+                }
+                keyboard::Key::J => {
+                    self.controller.input.button_a = true;
+                }
+                keyboard::Key::K => {
+                    self.controller.input.button_b = true;
+                }
+                _ => {}
             }
         };
-        if let Some(_) = event.controller_axis_args() {
-            // axis_values.insert((args.id, args.axis), args.position);
-        }
-        if let Some(_args) = event.idle_args() {
-            // println!("Idle {}", _args.dt);
-        }
-        if let Some(_args) = event.update_args() {
-            /*
-            // Used to test CPU overload.
-            println!("Update {}", _args.dt);
-            let mut x: f64 = 0.0;
-            for _ in 0..500_000 {
-                x += (1.0 + x).sqrt();
+        if let Some(Button::Keyboard(key)) = event.release_args() {
+            match key {
+                keyboard::Key::W => {
+                    self.controller.input.up = false;
+                }
+                keyboard::Key::A => {
+                    self.controller.input.left = false;
+                }
+                keyboard::Key::S => {
+                    self.controller.input.down = false;
+                }
+                keyboard::Key::D => {
+                    self.controller.input.right = false;
+                }
+                keyboard::Key::J => {
+                    self.controller.input.button_a = false;
+                }
+                keyboard::Key::K => {
+                    self.controller.input.button_b = false;
+                }
+                _ => {}
             }
-            println!("{}", x);
-            */
-        }
+        };
+        if let Some(touch) = event.touch_args() {
+            // http://docs.piston.rs/piston_window/input/struct.TouchArgs.html
+            // TODO When on a mobile platform, display touch interface and
+            // use this event to register "button" presses.
+            println!("Touch occurred '{:?}'", touch);
+        };
     }
 
     fn render(&mut self, context: piston_window::Context, renderer: &mut piston_window::G2d) {

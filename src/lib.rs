@@ -7,5 +7,7 @@ extern crate gfx_device_gl;
 pub extern crate piston_window;
 
 mod tilesheet;
+mod input;
+mod controller;
 
 pub mod game;
