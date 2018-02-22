@@ -66,18 +66,15 @@ impl Tilesheet {
         self.map.tile_height
     }
 
-    pub fn map_width_in_tiles(&self) -> u32 {
+    fn map_width_in_tiles(&self) -> u32 {
         self.image.width() / self.tile_width()
-    }
-
-    pub fn map_height_in_tiles(&self) -> u32 {
-        self.image.height() / self.tile_height()
     }
 
     pub fn tile_rect(&self, tile: u32) -> [f64; 4] {
         let tile = tile - 1; // tiled counts from 1
-        let x = (tile % self.map_width_in_tiles() * self.tile_width()) as f64;
-        let y = (tile / self.map_height_in_tiles() * self.tile_height()) as f64;
+        let map_width_in_tiles = self.map_width_in_tiles();
+        let x = (tile % map_width_in_tiles * self.tile_width()) as f64;
+        let y = (tile / map_width_in_tiles * self.tile_height()) as f64;
         [x, y, self.tile_width() as f64, self.tile_height() as f64]
     }
 }
