@@ -12,7 +12,7 @@ fn main() {
         .unwrap();
 
     let mut window: piston_window::PistonWindow =
-        piston_window::WindowSettings::new("RollPlayGE Demo", [600, 600])
+        piston_window::WindowSettings::new("RollPlayGE Demo", [800, 600])
             .exit_on_esc(true)
             .opengl(piston_window::OpenGL::V3_2)
             .build()

@@ -5,6 +5,7 @@ use gfx_device_gl;
 use tilesheet;
 use piston_window::*;
 use controller;
+use model;
 
 #[derive(Debug)]
 pub enum NewGameError {
@@ -17,6 +18,7 @@ pub struct Game {
     piston_image: piston_window::Image,
     map_texture: piston_window::Texture<gfx_device_gl::Resources>,
     controller: controller::Controller,
+    model: model::Model,
 }
 
 impl Game {
@@ -40,6 +42,7 @@ impl Game {
             piston_image: piston_image,
             map_texture: tiletexture,
             controller: controller::Controller::new(),
+            model: model::Model::new(),
         })
     }
 
@@ -50,7 +53,10 @@ impl Game {
                 return false;
             }
         };
-        self.handle_event(&event);
+        self.update_controller(&event);
+        self.update_model();
+
+        // Update view
         window.draw_2d(&event, |context, gfx| {
             self.render(context, gfx);
             Some(())
@@ -58,7 +64,7 @@ impl Game {
         true
     }
 
-    fn handle_event(&mut self, event: &piston_window::Event) {
+    fn update_controller(&mut self, event: &piston_window::Event) {
         if let Some(Button::Keyboard(key)) = event.press_args() {
             // TODO Make keybindings configurable.
             match key {
@@ -114,6 +120,13 @@ impl Game {
         };
     }
 
+    fn update_model(&mut self) {
+        self.model.vy = (self.controller.input.up as u32) - (self.controller.input.down as u32);
+        self.model.vx = (self.controller.input.left as u32) - (self.controller.input.right as u32);
+        self.model.y = self.model.y + self.model.vy;
+        self.model.x = self.model.x + self.model.vx;
+    }
+
     fn render(&mut self, context: piston_window::Context, renderer: &mut piston_window::G2d) {
         piston_window::clear([0.5; 4], renderer);
 
@@ -124,8 +137,10 @@ impl Game {
                 }
 
                 let trans = context.transform.trans(
-                    x as f64 * self.tilesheet.tile_width() as f64,
-                    y as f64 * self.tilesheet.tile_height() as f64,
+                    self.model.x as f64 -
+                        x as f64 * self.tilesheet.tile_width() as f64,
+                    self.model.y as f64 -
+                        y as f64 * self.tilesheet.tile_height() as f64,
                 );
 
                 self.piston_image
