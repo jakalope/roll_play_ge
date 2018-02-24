@@ -54,6 +54,7 @@ impl Game {
             }
         };
         self.update_controller(&event);
+
         self.update_model();
 
         // Update view
@@ -65,6 +66,11 @@ impl Game {
     }
 
     fn update_controller(&mut self, event: &piston_window::Event) {
+        self.controller.dt_s = match event.idle_args() {
+            Some(_args) => _args.dt as f32,
+            None => 0.0,
+        };
+
         if let Some(Button::Keyboard(key)) = event.press_args() {
             // TODO Make keybindings configurable.
             match key {
@@ -121,10 +127,12 @@ impl Game {
     }
 
     fn update_model(&mut self) {
-        self.model.vy = (self.controller.input.up as u32) - (self.controller.input.down as u32);
-        self.model.vx = (self.controller.input.left as u32) - (self.controller.input.right as u32);
-        self.model.y = self.model.y + self.model.vy;
-        self.model.x = self.model.x + self.model.vx;
+        self.model.vy = self.controller.walk_rate *
+            ((self.controller.input.up as i32) - (self.controller.input.down as i32)) as f32;
+        self.model.vx = self.controller.walk_rate *
+            ((self.controller.input.left as i32) - (self.controller.input.right as i32)) as f32;
+        self.model.y = self.model.y + self.controller.dt_s * self.model.vy;
+        self.model.x = self.model.x + self.controller.dt_s * self.model.vx;
     }
 
     fn render(&mut self, context: piston_window::Context, renderer: &mut piston_window::G2d) {
