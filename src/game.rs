@@ -1,24 +1,24 @@
 use std::*;
 use piston_window;
-use gfx_core::*;
-use gfx_device_gl;
+use gfx_core;
 use tilesheet;
 use piston_window::*;
 use controller;
-use model;
+use actor;
 
 #[derive(Debug)]
 pub enum NewGameError {
     TilesheetError(tilesheet::TilesheetError),
-    WindowError(factory::CombinedError),
+    WindowError(gfx_core::factory::CombinedError),
+    HeroError(String),
 }
 
 pub struct Game {
     tilesheet: tilesheet::Tilesheet,
     piston_image: piston_window::Image,
-    map_texture: piston_window::Texture<gfx_device_gl::Resources>,
+    map_tiles_texture: piston_window::G2dTexture,
     controller: controller::Controller,
-    model: model::Model,
+    hero: actor::Actor,
 }
 
 impl Game {
@@ -29,20 +29,41 @@ impl Game {
         let tilesheet = tilesheet::Tilesheet::from_path(&asset_path.join("tiled_base64_zlib.tmx"))
             .map_err(|e| NewGameError::TilesheetError(e))?;
 
-        let tiletexture = piston_window::Texture::from_image(
+
+        let texture_settings = piston_window::TextureSettings::new();
+        let map_tiles_texture = piston_window::Texture::from_image(
             &mut window.factory,
             tilesheet.image(),
-            &piston_window::TextureSettings::new(),
+            &texture_settings,
         ).map_err(|e| NewGameError::WindowError(e))?;
 
-        let piston_image = piston_window::Image::new();
+        let hero_texture = piston_window::Texture::from_path(
+            &mut window.factory,
+            &asset_path.join("hero_walk.png"),
+            piston_window::Flip::None,
+            &texture_settings,
+        ).map_err(|e| NewGameError::HeroError(e))?;
+
+        let hero_sheet = actor::CharacterSheet::from_texture(hero_texture, 3, 4)
+            .map_err(|e| NewGameError::HeroError(e))?;
+
+        let hero_walk_chooer = actor::WalkingSpriteChooser::from_sheet(0.2, &hero_sheet)
+            .map_err(|e| NewGameError::HeroError(e))?;
+
+        let mut hero = actor::Actor::new();
+        hero.insert_chooser(
+            String::from("walk"),
+            cell::RefCell::<Box<actor::WalkingSpriteChooser>>::new(
+                Box::<actor::WalkingSpriteChooser>::new(hero_walk_chooer),
+            ),
+        );
 
         Ok(Game {
             tilesheet: tilesheet,
-            piston_image: piston_image,
-            map_texture: tiletexture,
+            piston_image: piston_window::Image::new(),
+            map_tiles_texture: map_tiles_texture,
             controller: controller::Controller::new(),
-            model: model::Model::new(),
+            hero: hero,
         })
     }
 
@@ -55,7 +76,7 @@ impl Game {
         };
         self.update_controller(&event);
 
-        self.update_model();
+        self.update_actor();
 
         // Update view
         window.draw_2d(&event, |context, gfx| {
@@ -67,9 +88,16 @@ impl Game {
 
     fn update_controller(&mut self, event: &piston_window::Event) {
         self.controller.dt_s = match event.idle_args() {
-            Some(_args) => _args.dt as f32,
+            Some(_args) => _args.dt,
             None => 0.0,
         };
+
+        self.controller.dt_s = match event.update_args() {
+            Some(_args) => _args.dt,
+            None => 0.0,
+        };
+
+        self.controller.game_time_s += self.controller.dt_s;
 
         if let Some(Button::Keyboard(key)) = event.press_args() {
             // TODO Make keybindings configurable.
@@ -126,16 +154,16 @@ impl Game {
         };
     }
 
-    fn update_model(&mut self) {
-        self.model.vy = self.controller.walk_rate *
+    fn update_actor(&mut self) {
+        self.hero.vy = self.controller.walk_rate *
             ((self.controller.input.up as i32) - (self.controller.input.down as i32)) as f32;
-        self.model.vx = self.controller.walk_rate *
+        self.hero.vx = self.controller.walk_rate *
             ((self.controller.input.left as i32) - (self.controller.input.right as i32)) as f32;
-        self.model.y = self.model.y + self.controller.dt_s * self.model.vy;
-        self.model.x = self.model.x + self.controller.dt_s * self.model.vx;
+        self.hero.y += (self.controller.dt_s * self.hero.vy as f64) as f32;
+        self.hero.x += (self.controller.dt_s * self.hero.vx as f64) as f32;
     }
 
-    fn render(&mut self, context: piston_window::Context, renderer: &mut piston_window::G2d) {
+    fn render(&mut self, context: piston_window::Context, renderer: &mut G2d) {
         piston_window::clear([0.5; 4], renderer);
 
         for (y, row) in self.tilesheet.layer_tile_iter(0).enumerate() {
@@ -145,21 +173,29 @@ impl Game {
                 }
 
                 let trans = context.transform.trans(
-                    self.model.x as f64 -
+                    self.hero.x as f64 -
                         x as f64 * self.tilesheet.tile_width() as f64,
-                    self.model.y as f64 -
+                    self.hero.y as f64 -
                         y as f64 * self.tilesheet.tile_height() as f64,
                 );
 
                 self.piston_image
                     .src_rect(self.tilesheet.tile_rect(tile))
                     .draw(
-                        &self.map_texture,
+                        &self.map_tiles_texture,
                         &piston_window::DrawState::default(),
                         trans,
                         renderer,
                     );
             }
         }
+
+        let hero_trans = context.transform.trans(300.0, 300.0);
+        self.hero.draw(
+            "walk",
+            self.controller.game_time_s,
+            hero_trans,
+            renderer,
+        );
     }
 }

@@ -9,10 +9,10 @@ UI. Thus, this project aims to glue together the pieces necessary to make a bett
 
 ### Third party compatibility
  - [x] Support for a third party map editor: http://www.mapeditor.org/ 
- - [ ] Support for a third party asset manager
+ - [ ] Support for third party sprite sheet animation: https://www.aseprite.org/
 
 ### User interface
- - [ ] Keyboard UI
+ - [x] Keyboard UI
  - [ ] Touch UI
 
 ### Battle system
@@ -21,9 +21,13 @@ UI. Thus, this project aims to glue together the pieces necessary to make a bett
  - [ ] Projectiles
  - [ ] Guard/protect
 
+### Map system
+ - [ ] Character remains in center
+ - [ ] End-of-world methods: Solid, Textured, Wrap
+
 ### Scene control
  - [ ] Custom lighting
- - [ ] Character text and thought bubbles
+ - [ ] Character speech- and thought-bubbles
 
 ## Credits
 

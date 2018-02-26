@@ -1,12 +1,18 @@
-extern crate tiled;
-extern crate image;
+extern crate ai_behavior;
 extern crate gfx_core;
-extern crate graphics;
 extern crate gfx_device_gl;
+extern crate gfx_texture;
+extern crate graphics;
+extern crate piston;
+extern crate image;
+extern crate sprite;
+extern crate tiled;
+extern crate uuid;
+
 
 pub extern crate piston_window;
 
-mod model;
+mod actor;
 mod tilesheet;
 mod input;
 mod controller;
