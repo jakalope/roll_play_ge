@@ -54,6 +54,20 @@ impl Tilesheet {
         self.map.layers[layer_number].tiles.iter().clone()
     }
 
+    pub fn background_color(&self) -> [f32; 4] {
+        let color = self.map.background_colour.unwrap_or(tiled::Colour {
+            red: 127,
+            green: 127,
+            blue: 127,
+        });
+        [
+            color.red as f32 * (1.0 / 256.0),
+            color.green as f32 * (1.0 / 256.0),
+            color.blue as f32 * (1.0 / 256.0),
+            1.0,
+        ]
+    }
+
     pub fn image(&self) -> &image::RgbaImage {
         &self.image
     }
@@ -72,9 +86,8 @@ impl Tilesheet {
 
     pub fn tile_rect(&self, tile: u32) -> [f64; 4] {
         let tile = tile - 1; // tiled counts from 1
-        let map_width_in_tiles = self.map_width_in_tiles();
-        let x = (tile % map_width_in_tiles * self.tile_width()) as f64;
-        let y = (tile / map_width_in_tiles * self.tile_height()) as f64;
+        let x = (tile % self.map_width_in_tiles() * self.tile_width()) as f64;
+        let y = (tile / self.map_width_in_tiles() * self.tile_height()) as f64;
         [x, y, self.tile_width() as f64, self.tile_height() as f64]
     }
 }

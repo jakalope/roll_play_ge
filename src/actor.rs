@@ -5,6 +5,7 @@ use std;
 use std::cell;
 use gfx_texture::ImageSize;
 use std::collections::HashMap;
+use controller;
 
 pub struct CharacterSheet {
     texture: std::rc::Rc<G2dTexture>,
@@ -93,14 +94,6 @@ pub struct ChooserArgs {
 }
 
 impl ChooserArgs {
-    pub fn new() -> Self {
-        ChooserArgs {
-            vx: 0.0,
-            vy: 0.0,
-            game_time_s: 0.0,
-        }
-    }
-
     pub fn from_vals(vx: f32, vy: f32, game_time_s: f64) -> Self {
         ChooserArgs {
             vx: vx,
@@ -114,15 +107,27 @@ pub trait SpriteChooser {
     fn choose(&mut self, args: ChooserArgs) -> Option<&sprite::Sprite<G2dTexture>>;
 }
 
-fn choose_walking_column(len: usize, dt: f64, args: &ChooserArgs) -> u32 {
+fn choose_walking_column(dt: f64, args: &ChooserArgs) -> u32 {
     if args.vx == 0.0 && args.vy == 0.0 {
         1 // Stationary
     } else {
-        // TODO: the preferred sequence is 0, 1, 2, 1, 0, ...
-        //       the current sequence is 0, 1, 2, 0, 1, 2, ...
-        let modulo = args.game_time_s % (len as f64 * dt);
-        let factor = modulo / dt;
-        factor as u32
+        let modulo = args.game_time_s % (4 as f64 * dt);
+        let factor = (modulo / dt) as u32;
+        match factor {
+            0 => 0,
+            1 => 1,
+            2 => 2,
+            3 => 1,
+            _ => {
+                panic!(
+                    "args.game_time_s = {}, dt = {}, modulo = {}, factor = {}",
+                    args.game_time_s,
+                    dt,
+                    modulo,
+                    factor
+                )
+            }
+        }
     }
 }
 
@@ -133,46 +138,36 @@ mod tests {
 
     #[test]
     fn stationary_column() {
-        assert_eq!(1, choose(2, 1.0, &ChooserArgs::from_vals(0.0, 0.0, 0.0)));
-        assert_eq!(1, choose(2, 1.0, &ChooserArgs::from_vals(0.0, 0.0, 2.2)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(0.0, 0.0, 0.0)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(0.0, 0.0, 1.2)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(0.0, 0.0, 2.2)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(0.0, 0.0, 3.2)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(0.0, 0.0, 4.2)));
     }
 
     #[test]
     fn walking_column() {
-        assert_eq!(0, choose(2, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 0.0)));
-        assert_eq!(1, choose(2, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 1.1)));
-        assert_eq!(0, choose(2, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 2.2)));
-        assert_eq!(1, choose(2, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 3.3)));
-
-        assert_eq!(0, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 0.0)));
-        assert_eq!(1, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 1.1)));
-        assert_eq!(2, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 2.2)));
-        assert_eq!(0, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 3.3)));
-        assert_eq!(1, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 4.4)));
-        assert_eq!(2, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 5.5)));
-        assert_eq!(0, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 6.0)));
-        assert_eq!(0, choose(3, 1.0, &ChooserArgs::from_vals(1.0, 0.0, 6.6)));
-
-        assert_eq!(0, choose(2, 0.5, &ChooserArgs::from_vals(1.0, 0.0, 0.0)));
-        assert_eq!(1, choose(2, 0.5, &ChooserArgs::from_vals(1.0, 0.0, 0.6)));
-        assert_eq!(0, choose(2, 0.5, &ChooserArgs::from_vals(1.0, 0.0, 1.1)));
-        assert_eq!(1, choose(2, 0.5, &ChooserArgs::from_vals(1.0, 0.0, 1.7)));
+        assert_eq!(0, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 0.0)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 1.1)));
+        assert_eq!(2, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 2.2)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 3.3)));
+        assert_eq!(0, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 4.4)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 5.5)));
+        assert_eq!(2, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 6.6)));
+        assert_eq!(1, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 7.7)));
+        assert_eq!(0, choose(1.0, &ChooserArgs::from_vals(1.0, 0.0, 8.8)));
     }
 }
 
 fn choose_walking_row(previous_row: u32, args: &ChooserArgs) -> u32 {
     if args.vx > 0.0 {
-        // Right
-        1
+        1 // Right
     } else if args.vx < 0.0 {
-        // Left
-        2
+        2 // Left
     } else if args.vy > 0.0 {
-        // Down
-        3
+        3 // Down
     } else if args.vy < 0.0 {
-        // Up
-        0
+        0 // Up
     } else {
         previous_row
     }
@@ -186,15 +181,18 @@ pub struct WalkingSpriteChooser {
 
 impl WalkingSpriteChooser {
     pub fn from_sheet(dt: f64, sheet: &CharacterSheet) -> Result<Self, String> {
-        if sheet.tiles_high() != 4 || sheet.tiles_wide() != 3 {
+        const COLUMNS: u32 = 3;
+        const ROWS: u32 = 4;
+
+        if sheet.tiles_high() != ROWS || sheet.tiles_wide() != COLUMNS {
             return Err(String::from(
                 "WalkingSpriteChooser::from_sheet() requires a 3x4 tile CharacterSheet",
             ));
         }
 
         let mut sprite_list = Vec::<sprite::Sprite<G2dTexture>>::new();
-        for row in 0..4 {
-            for col in 0..3 {
+        for row in 0..ROWS {
+            for col in 0..COLUMNS {
                 let sprite = sheet.sprite(col, row)?;
                 sprite_list.push(sprite);
             }
@@ -210,15 +208,15 @@ impl WalkingSpriteChooser {
 
 impl SpriteChooser for WalkingSpriteChooser {
     fn choose(&mut self, args: ChooserArgs) -> Option<&sprite::Sprite<G2dTexture>> {
+        const COLUMNS: u32 = 3;
         match self.sprite.len() {
             0 => {
                 return None;
             }
-            len => Some({
-                let mut column = choose_walking_column(3, self.dt, &args);
+            _ => Some({
+                let mut column = choose_walking_column(self.dt, &args);
                 self.previous_row = choose_walking_row(self.previous_row, &args);
-                let idx = (self.previous_row * 3 + column) as usize;
-                assert!(idx < 12);
+                let idx = (self.previous_row * COLUMNS + column) as usize;
                 &self.sprite[idx]
             }),
         }
@@ -258,6 +256,15 @@ impl Actor {
             vy: 0.0,
             chooser_map: HashMap::<String, cell::RefCell<Box<SpriteChooser>>>::new(),
         }
+    }
+
+    pub fn control(&mut self, controller: &controller::Controller) {
+        self.vy = controller.walk_rate *
+            ((controller.input.up as i32) - (controller.input.down as i32)) as f32;
+        self.vx = controller.walk_rate *
+            ((controller.input.left as i32) - (controller.input.right as i32)) as f32;
+        self.y += (controller.dt_s * self.vy as f64) as f32;
+        self.x += (controller.dt_s * self.vx as f64) as f32;
     }
 
     pub fn draw(

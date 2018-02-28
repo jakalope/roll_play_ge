@@ -74,11 +74,10 @@ impl Game {
                 return false;
             }
         };
+
         self.update_controller(&event);
+        self.hero.control(&self.controller);
 
-        self.update_actor();
-
-        // Update view
         window.draw_2d(&event, |context, gfx| {
             self.render(context, gfx);
             Some(())
@@ -154,17 +153,20 @@ impl Game {
         };
     }
 
-    fn update_actor(&mut self) {
-        self.hero.vy = self.controller.walk_rate *
-            ((self.controller.input.up as i32) - (self.controller.input.down as i32)) as f32;
-        self.hero.vx = self.controller.walk_rate *
-            ((self.controller.input.left as i32) - (self.controller.input.right as i32)) as f32;
-        self.hero.y += (self.controller.dt_s * self.hero.vy as f64) as f32;
-        self.hero.x += (self.controller.dt_s * self.hero.vx as f64) as f32;
-    }
-
     fn render(&mut self, context: piston_window::Context, renderer: &mut G2d) {
-        piston_window::clear([0.5; 4], renderer);
+        piston_window::clear(self.tilesheet.background_color(), renderer);
+
+        let viewport = match context.viewport {
+            Some(viewport) => viewport,
+            None => {
+                return; // Headless mode?
+            }
+        };
+
+        let center = [
+            viewport.window_size[0] as f64 * 0.5,
+            viewport.window_size[1] as f64 * 0.5,
+        ];
 
         for (y, row) in self.tilesheet.layer_tile_iter(0).enumerate() {
             for (x, &tile) in row.iter().enumerate() {
@@ -173,9 +175,9 @@ impl Game {
                 }
 
                 let trans = context.transform.trans(
-                    self.hero.x as f64 -
+                    self.hero.x as f64 + center[0] -
                         x as f64 * self.tilesheet.tile_width() as f64,
-                    self.hero.y as f64 -
+                    self.hero.y as f64 + center[1] -
                         y as f64 * self.tilesheet.tile_height() as f64,
                 );
 
@@ -190,12 +192,15 @@ impl Game {
             }
         }
 
-        let hero_trans = context.transform.trans(300.0, 300.0);
-        self.hero.draw(
+        let hero_trans = context.transform.trans(center[0], center[1]);
+        match self.hero.draw(
             "walk",
             self.controller.game_time_s,
             hero_trans,
             renderer,
-        );
+        ) {
+            Err(actor::ActorDrawError::NoSuchName) => panic!(),
+            _ => (),
+        }
     }
 }
