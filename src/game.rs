@@ -114,10 +114,10 @@ impl Game {
                     self.controller.input.right = true;
                 }
                 keyboard::Key::J => {
-                    self.controller.input.button_a = true;
+                    self.controller.input.attack = true;
                 }
                 keyboard::Key::K => {
-                    self.controller.input.button_b = true;
+                    self.controller.input.defend = true;
                 }
                 _ => {}
             }
@@ -137,10 +137,10 @@ impl Game {
                     self.controller.input.right = false;
                 }
                 keyboard::Key::J => {
-                    self.controller.input.button_a = false;
+                    self.controller.input.attack = false;
                 }
                 keyboard::Key::K => {
-                    self.controller.input.button_b = false;
+                    self.controller.input.defend = false;
                 }
                 _ => {}
             }

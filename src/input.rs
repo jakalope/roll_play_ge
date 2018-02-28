@@ -7,8 +7,9 @@ pub struct Input {
     pub down: bool,
     pub left: bool,
     pub right: bool,
-    pub button_a: bool,
-    pub button_b: bool,
+    pub attack: bool,
+    pub defend: bool,
+    pub menu: bool,
 }
 
 impl Input {
@@ -18,8 +19,9 @@ impl Input {
             down: false,
             left: false,
             right: false,
-            button_a: false,
-            button_b: false,
+            attack: false,
+            defend: false,
+            menu: false,
         }
     }
 }

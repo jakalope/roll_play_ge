@@ -3,8 +3,14 @@ use input;
 #[derive(Debug)]
 pub struct Controller {
     pub input: input::Input,
+
+    /// Walk-Rate multiplier. Normal ~= 240.0.
     pub walk_rate: f32,
+
+    /// Time since last game cycle.
     pub dt_s: f64,
+
+    /// Total elapsed game time.
     pub game_time_s: f64,
 }
 
