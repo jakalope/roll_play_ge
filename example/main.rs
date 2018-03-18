@@ -15,8 +15,10 @@ fn main() {
         piston_window::WindowSettings::new("RollPlayGE Demo", [800, 600])
             .exit_on_esc(true)
             .opengl(piston_window::OpenGL::V3_2)
+            .vsync(true)
             .build()
             .unwrap();
+
 
     let mut game = game::Game::from_path(&asset_path, &mut window).unwrap();
     while game.next(&mut window) {}
