@@ -2,6 +2,7 @@ extern crate find_folder;
 extern crate roll_play_ge;
 extern crate piston_window;
 
+use piston_window::EventLoop;
 use roll_play_ge::game;
 
 // Edit this map with http://www.mapeditor.org/
@@ -18,7 +19,10 @@ fn main() {
             .vsync(true)
             .build()
             .unwrap();
-
+    window.set_max_fps(60);
+    window.set_ups(60);
+    window.set_ups_reset(1);
+    window.set_swap_buffers(true);
 
     let mut game = game::Game::from_path(&asset_path, &mut window).unwrap();
     while game.next(&mut window) {}
