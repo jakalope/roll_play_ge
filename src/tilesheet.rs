@@ -96,9 +96,9 @@ impl Tilesheet {
 
     fn tile_id_from_map_coordinate(&self, layer_index: usize, x: f32, y: f32) -> Option<u32> {
         let layer = self.map.layers.get(layer_index)?;
-        let row_index = (y / self.tile_height() as f32).trunc() as usize;
+        let row_index = (y / self.tile_height() as f32).round() as usize;
         let row = layer.tiles.get(row_index)?;
-        let col_index = (x / self.tile_width() as f32).trunc() as usize;
+        let col_index = (x / self.tile_width() as f32).round() as usize;
         match row.get(col_index) {
             Some(value) => Some(*value),
             None => None,
@@ -117,7 +117,9 @@ impl Tilesheet {
     }
 
     pub fn is_walkable(&self, layer_index: usize, x: f32, y: f32) -> bool {
+        // TODO BUG property lookup seems to have an off-by-one error in (x,y)
         // get tile ID for map(x,y)
+        // https://github.com/jakalope/roll_play_ge/issues/2
         let tile_gid = match self.tile_id_from_map_coordinate(layer_index, x, y) {
             Some(t) => t,
             None => {
