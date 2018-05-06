@@ -29,3 +29,4 @@ shader_version = "0.3.0"
 tiled = "0.7.2"
 uuid = "0.1.17"
 vecmath = "0.3.0"
+game_network = { git = "https://github.com/jakalope/game_network" }

@@ -6,6 +6,9 @@ use std::cell;
 use gfx_texture::ImageSize;
 use std::collections::HashMap;
 use controller;
+use tilesheet;
+
+static GROUND_LAYER_INDEX: usize = 0;
 
 pub struct CharacterSheet {
     texture: std::rc::Rc<G2dTexture>,
@@ -258,13 +261,21 @@ impl Actor {
         }
     }
 
-    pub fn control(&mut self, controller: &controller::Controller) {
+    pub fn control(
+        &mut self,
+        controller: &controller::Controller,
+        tilesheet: &tilesheet::Tilesheet,
+    ) {
         self.vy = controller.walk_rate *
             ((controller.input.up as i32) - (controller.input.down as i32)) as f32;
         self.vx = controller.walk_rate *
             ((controller.input.left as i32) - (controller.input.right as i32)) as f32;
-        self.y += (controller.dt_s * self.vy as f64) as f32;
-        self.x += (controller.dt_s * self.vx as f64) as f32;
+        let proposed_y = self.y + (controller.dt_s * self.vy as f64) as f32;
+        let proposed_x = self.x + (controller.dt_s * self.vx as f64) as f32;
+        if tilesheet.is_walkable(GROUND_LAYER_INDEX, proposed_x, proposed_y) {
+            self.x = proposed_x;
+            self.y = proposed_y;
+        }
     }
 
     pub fn draw(

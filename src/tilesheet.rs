@@ -84,10 +84,63 @@ impl Tilesheet {
         self.image.width() / self.tile_width()
     }
 
+    /// Returns an array of 4 floats, designating `tile`s boundaries `(x,y,width,height)` within
+    /// the tileset image. Used to render a tile.
+    /// Note: This is NOT in map coordinates.
     pub fn tile_rect(&self, tile: u32) -> [f64; 4] {
-        let tile = tile - 1; // tiled counts from 1
+        let tile = tile - 1; // tiled counts from 1; we want from 0
         let x = (tile % self.map_width_in_tiles() * self.tile_width()) as f64;
         let y = (tile / self.map_width_in_tiles() * self.tile_height()) as f64;
         [x, y, self.tile_width() as f64, self.tile_height() as f64]
+    }
+
+    fn tile_id_from_map_coordinate(&self, layer_index: usize, x: f32, y: f32) -> Option<u32> {
+        let layer = self.map.layers.get(layer_index)?;
+        let row_index = (y / self.tile_height() as f32).trunc() as usize;
+        let row = layer.tiles.get(row_index)?;
+        let col_index = (x / self.tile_width() as f32).trunc() as usize;
+        match row.get(col_index) {
+            Some(value) => Some(*value),
+            None => None,
+        }
+    }
+
+    /// Robustification helper that converts any valid PropertyValue into a bool.
+    fn bool_property(value: &tiled::PropertyValue) -> bool {
+        match value {
+            &tiled::PropertyValue::BoolValue(b) => b,
+            &tiled::PropertyValue::IntValue(i) => i != 0,
+            &tiled::PropertyValue::FloatValue(f) => f != 0.0,
+            &tiled::PropertyValue::ColorValue(c) => c != 0,
+            &tiled::PropertyValue::StringValue(ref s) => s != "false",
+        }
+    }
+
+    pub fn is_walkable(&self, layer_index: usize, x: f32, y: f32) -> bool {
+        // get tile ID for map(x,y)
+        let tile_gid = match self.tile_id_from_map_coordinate(layer_index, x, y) {
+            Some(t) => t,
+            None => {
+                return true;
+            }
+        };
+        // get the tileset index
+        let tileset = match self.map.get_tileset_by_gid(tile_gid) {
+            Some(value) => value,
+            None => {
+                return true;
+            }
+        };
+        // get property for the tile ID
+        let tile = match tileset.tiles.get(tile_gid as usize) {
+            Some(t) => t,
+            None => {
+                return true;
+            }
+        };
+        match tile.properties.get("walkable") {
+            Some(walkable) => Tilesheet::bool_property(walkable),
+            None => true,  // assume walkable if no such property is set
+        }
     }
 }

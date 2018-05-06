@@ -5,6 +5,7 @@ use tilesheet;
 use piston_window::*;
 use controller;
 use actor;
+// use game_network::client;
 
 #[derive(Debug)]
 pub enum NewGameError {
@@ -20,6 +21,7 @@ pub struct Game {
     controller: controller::Controller,
     hero: actor::Actor,
     glyphs: piston_window::Glyphs,
+    // network: client::Client,
 }
 
 impl Game {
@@ -67,6 +69,10 @@ impl Game {
             piston_window::Glyphs::new(font, factory, piston_window::TextureSettings::new())
                 .unwrap();
 
+        // Network
+        // let credendials = game_network::msg::Credentials;
+        // let network = client::Client::connect(credendials);
+
         Ok(Game {
             tilesheet: tilesheet,
             piston_image: piston_window::Image::new(),
@@ -74,6 +80,7 @@ impl Game {
             controller: controller::Controller::new(),
             hero: hero,
             glyphs: glyphs,
+            // network: network,
         })
     }
 
@@ -86,7 +93,7 @@ impl Game {
         };
 
         self.update(&event);
-        self.hero.control(&self.controller);
+        self.hero.control(&self.controller, &self.tilesheet);
 
         window.draw_2d(&event, |context, gfx| {
             self.render(context, gfx);
@@ -196,6 +203,7 @@ impl Game {
         for (y, row) in self.tilesheet.layer_tile_iter(0).enumerate() {
             for (x, &tile) in row.iter().enumerate() {
                 if tile == 0 {
+                    // tiled counts from 1; 0 is invalid
                     continue;
                 }
 
