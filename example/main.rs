@@ -24,6 +24,11 @@ fn main() {
     window.set_ups_reset(1);
     window.set_swap_buffers(true);
 
-    let mut game = game::Game::from_path(&asset_path, &mut window).unwrap();
+    let server_addr = std::net::SocketAddr::new(
+        std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
+        12345,
+    );
+
+    let mut game = game::Game::from_path(&asset_path, &mut window, server_addr).unwrap();
     while game.next(&mut window) {}
 }

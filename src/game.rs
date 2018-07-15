@@ -5,29 +5,35 @@ use tilesheet;
 use piston_window::*;
 use controller;
 use actor;
-// use game_network::client;
+use game_network;
 
 #[derive(Debug)]
 pub enum NewGameError {
     TilesheetError(tilesheet::TilesheetError),
     WindowError(gfx_core::factory::CombinedError),
     HeroError(String),
+    NetworkError(game_network::msg::CommError),
 }
 
 pub struct Game {
     tilesheet: tilesheet::Tilesheet,
     piston_image: piston_window::Image,
     map_tiles_texture: piston_window::G2dTexture,
+
+    /// Total elapsed game time.
+    game_time_s: f64,
+
     controller: controller::Controller,
     hero: actor::Actor,
     glyphs: piston_window::Glyphs,
-    // network: client::Client,
+    network: game_network::client::Client,
 }
 
 impl Game {
     pub fn from_path(
         asset_path: &path::Path,
         window: &mut piston_window::PistonWindow,
+        server_address: net::SocketAddr,
     ) -> Result<Self, NewGameError> {
         // Map
         let tilesheet = tilesheet::Tilesheet::from_path(&asset_path.join("tiled_base64_zlib.tmx"))
@@ -70,17 +76,21 @@ impl Game {
                 .unwrap();
 
         // Network
-        // let credendials = game_network::msg::Credentials;
-        // let network = client::Client::connect(credendials);
+        let network = game_network::client::Client::connect(
+            String::from("some_user"),
+            String::from("some_password"),
+            server_address,
+        ).map_err(|err| NewGameError::NetworkError(err))?;
 
         Ok(Game {
             tilesheet: tilesheet,
             piston_image: piston_window::Image::new(),
             map_tiles_texture: map_tiles_texture,
+            game_time_s: 0.0,
             controller: controller::Controller::new(),
             hero: hero,
             glyphs: glyphs,
-            // network: network,
+            network: network,
         })
     }
 
@@ -92,7 +102,22 @@ impl Game {
             }
         };
 
-        self.update(&event);
+        self.controller.process_event(&event);
+        self.game_time_s += self.controller.dt_s;
+
+        // Send self.controller to the server.
+        if let Err(_) = self.network.send_controller_input(
+            game_network::bitvec::BitVec::from(
+                &self.controller.input,
+            ),
+        )
+        {
+            // TODO
+        }
+
+        // TODO Receive player's world context from server.
+        // TODO For now, we'll let the controller directly control our visualization, but we'll
+        // need to eventually negotiate their differences.
         self.hero.control(&self.controller, &self.tilesheet);
 
         window.draw_2d(&event, |context, gfx| {
@@ -100,69 +125,6 @@ impl Game {
             Some(())
         });
         true
-    }
-
-    fn update(&mut self, event: &piston_window::Event) {
-        if let Some(update_args) = event.update_args() {
-            self.controller.dt_s = update_args.dt;
-            self.controller.game_time_s += self.controller.dt_s;
-        };
-
-        if let Some(Button::Keyboard(key)) = event.press_args() {
-            // TODO Make keybindings configurable.
-            match key {
-                keyboard::Key::W => {
-                    self.controller.input.up = true;
-                }
-                keyboard::Key::A => {
-                    self.controller.input.left = true;
-                }
-                keyboard::Key::S => {
-                    self.controller.input.down = true;
-                }
-                keyboard::Key::D => {
-                    self.controller.input.right = true;
-                }
-                keyboard::Key::J => {
-                    self.controller.input.attack = true;
-                }
-                keyboard::Key::K => {
-                    self.controller.input.defend = true;
-                }
-                _ => {}
-            }
-        };
-
-        if let Some(Button::Keyboard(key)) = event.release_args() {
-            match key {
-                keyboard::Key::W => {
-                    self.controller.input.up = false;
-                }
-                keyboard::Key::A => {
-                    self.controller.input.left = false;
-                }
-                keyboard::Key::S => {
-                    self.controller.input.down = false;
-                }
-                keyboard::Key::D => {
-                    self.controller.input.right = false;
-                }
-                keyboard::Key::J => {
-                    self.controller.input.attack = false;
-                }
-                keyboard::Key::K => {
-                    self.controller.input.defend = false;
-                }
-                _ => {}
-            }
-        };
-
-        if let Some(touch) = event.touch_args() {
-            // http://docs.piston.rs/piston_window/input/struct.TouchArgs.html
-            // TODO When on a mobile platform, display touch interface and
-            // use this event to register "button" presses.
-            println!("Touch occurred '{:?}'", touch);
-        };
     }
 
     fn print(&mut self, context: piston_window::Context, renderer: &mut G2d) {
@@ -228,7 +190,7 @@ impl Game {
         let hero_trans = context.transform.trans(center[0], center[1]);
         match self.hero.draw(
             "walk",
-            self.controller.game_time_s,
+            self.game_time_s,
             hero_trans,
             renderer,
         ) {
